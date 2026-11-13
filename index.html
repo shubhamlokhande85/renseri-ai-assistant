@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RENSERI AI ASSISTANT</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Clean Top Ribbon -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">RA</div>
+        <span class="brand-name">RENSERI AI ASSISTANT</span>
+      </div>
+
+      <!-- 4 Core Features on Ribbon -->
+      <nav class="ribbon-nav" role="tablist" aria-label="Workspace Features">
+        <button type="button" class="tab-btn active" data-tab="chat">AI Assistant</button>
+        <button type="button" class="tab-btn" data-tab="upload">Upload Dataset</button>
+        <button type="button" class="tab-btn" data-tab="dashboard">Dashboard</button>
+        <button type="button" class="tab-btn" data-tab="custom-clean">Dataset Transformation</button>
+      </nav>
+
+      <!-- Ribbon Search Bar + Voice Mic Symbol + Required Icons -->
+      <div class="ribbon-tools">
+        <form class="ribbon-search" id="ribbonSearchForm">
+          <input
+            type="text"
+            id="ribbonSearchInput"
+            placeholder="Search Google / Ask Groq..."
+            aria-label="Search bar"
+          />
+          <button
+            type="button"
+            class="icon-btn voice-mic-btn"
+            id="voiceMicBtn"
+            title="Speak (Microphone)"
+            aria-label="Microphone"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+          </button>
+          <button type="submit" class="icon-btn ribbon-go-btn" title="Search" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </form>
+
+        <button
+          type="button"
+          class="icon-btn"
+          id="llmSettingsBtn"
+          title="Groq & Google Gemini API Keys"
+          aria-label="API Keys"
+        >
+          <span class="key-status-dot" id="keyStatusDot"></span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          class="icon-btn"
+          id="themeToggleBtn"
+          title="Toggle Theme"
+          aria-label="Toggle Theme"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- Minimal Left Sidebar: Only Active Engine/Model + Attached Dataset Name -->
+      <aside class="sidebar">
+        <section class="side-card">
+          <div class="side-label">AI Engine &amp; Model</div>
+          <div class="side-kv">
+            <span class="side-k">Engine</span>
+            <select id="topProviderSelect" class="side-select" aria-label="AI Engine">
+              <option value="auto">Auto (Groq / Gemini)</option>
+              <option value="groq">Groq LLM</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="local">Local Search</option>
+            </select>
+          </div>
+          <div class="side-kv">
+            <span class="side-k">Model</span>
+            <span class="side-v mono" id="activeModelLabel">llama-3.3-70b-versatile</span>
+          </div>
+          <div class="side-kv">
+            <span class="side-k">Key Status</span>
+            <button type="button" class="side-link-btn" id="sidebarKeyBtn">
+              <span id="sidebarKeyStatus">Configure Key</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="side-card" id="sidebarDatasetCard">
+          <div class="side-label">Attached Dataset</div>
+          <div id="sidebarDatasetName" class="side-dataset-empty">No dataset attached</div>
+        </section>
+
+        <button type="button" class="side-clear-btn" id="sidebarClearChatBtn" title="Clear chat conversation">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          <span>Clear Chat</span>
+        </button>
+      </aside>
+
+      <!-- Main Stage (5 Feature Panels) -->
+      <main class="main-area">
+        <!-- FEATURE 1: AI ASSISTANT (Independent General Search & Groq/Gemini LLM) -->
+        <section class="tab-content active" id="tab-chat">
+          <div class="section-head">
+            <div>
+              <span class="section-title">AI Assistant</span>
+              <span class="section-sub" id="assistantStatusHint">General Search · Groq LLM &amp; Google Web</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="clearChatBtn" type="button">New Chat</button>
+          </div>
+
+          <div class="chat-feed" id="chatFeed"></div>
+
+          <div class="suggestions-bar" id="suggestionsBar"></div>
+
+          <form class="chat-composer" id="chatForm">
+            <textarea
+              id="chatInput"
+              rows="1"
+              placeholder="Ask anything to search Google or chat with Groq LLM..."
+            ></textarea>
+            <button
+              type="button"
+              class="icon-btn voice-mic-btn"
+              id="chatVoiceMicBtn"
+              title="Speak (Microphone)"
+              aria-label="Microphone"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </button>
+            <button type="submit" class="btn btn-primary" id="sendChatBtn">Send</button>
+          </form>
+        </section>
+
+        <!-- FEATURE 2: UPLOAD DATASET -->
+        <section class="tab-content" id="tab-upload">
+          <div class="upload-stage">
+            <div class="panel upload-card">
+              <div class="panel-header">
+                <h2>Upload Dataset</h2>
+                <span class="hint">CSV, TSV, XLSX, XLS, JSON, Parquet</span>
+              </div>
+
+              <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload dataset file">
+                <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,.xls,.json,.parquet" hidden />
+                <div class="drop-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                </div>
+                <div class="drop-title">Drop dataset file here or click to browse</div>
+                <div class="drop-sub" id="uploadStatusText">Automatically cleaned and prepared for Dashboard</div>
+              </div>
+
+              <details class="paste-details">
+                <summary class="paste-summary">
+                  <span>Or paste CSV / JSON directly</span>
+                  <span class="paste-chevron">▾</span>
+                </summary>
+                <div class="paste-inline">
+                  <div class="paste-inline-row">
+                    <input type="text" id="pasteDatasetName" class="text-input" value="user_dataset" placeholder="Dataset name" />
+                    <select id="pasteDatasetFormat" class="side-select" style="width:105px">
+                      <option value="auto">Auto</option>
+                      <option value="csv">CSV</option>
+                      <option value="tsv">TSV</option>
+                      <option value="json">JSON</option>
+                    </select>
+                  </div>
+                  <textarea
+                    id="pasteDatasetText"
+                    class="paste-textarea"
+                    rows="2"
+                    placeholder="name,region,revenue&#10;Alice,North,$1200&#10;Bob,South,$850"
+                  ></textarea>
+                  <div class="paste-actions">
+                    <button type="button" class="btn btn-primary btn-sm" id="submitPasteBtn">Load Pasted Dataset</button>
+                  </div>
+                </div>
+              </details>
+
+              <div class="samples-strip">
+                <span class="hint">Quick samples:</span>
+                <div class="sample-buttons" id="sampleButtons"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FEATURE 3: DASHBOARD & DATASET QUERIES -->
+        <section class="tab-content" id="tab-dashboard">
+          <div class="dash-query-bar">
+            <form id="dashPromptForm" class="dash-prompt-form">
+              <input
+                type="text"
+                id="dashPromptInput"
+                placeholder="Ask a question about your dataset, write SQL, or say 'create executive dashboard'..."
+              />
+              <button type="submit" class="btn btn-primary btn-sm" id="dashAskBtn">Run / Build</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashBuildAutoBtn">Auto Dashboard</button>
+            </form>
+          </div>
+          <div id="dashQueryOutput"></div>
+          <div class="dashboard-scroll" id="dashboardContent">
+            <div class="empty-state">
+              <p>Attach a dataset in <strong>Upload Dataset</strong> to query it, generate charts, and build an interactive dashboard.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- FEATURE 4: DATASET TRANSFORMATION (Dataset Summary, Data Cleaning, EDA Summary) -->
+        <section class="tab-content" id="tab-custom-clean">
+          <!-- Top bar with 3 Small Square Feature Switchers -->
+          <div class="trans-topbar">
+            <div class="trans-square-tabs">
+              <button type="button" class="trans-square-card active" data-subtab="summary" id="subtabBtnSummary">
+                <div class="trans-square-icon">📊</div>
+                <div class="trans-square-name">Dataset Summary</div>
+                <div class="trans-square-desc">Quality &amp; Overview</div>
+              </button>
+
+              <button type="button" class="trans-square-card" data-subtab="eda" id="subtabBtnEda">
+                <div class="trans-square-icon">📈</div>
+                <div class="trans-square-name">EDA Summary</div>
+                <div class="trans-square-desc">Profiles &amp; Stats</div>
+              </button>
+
+              <button type="button" class="trans-square-card" data-subtab="cleaning" id="subtabBtnCleaning">
+                <div class="trans-square-icon">🧹</div>
+                <div class="trans-square-name">Data Cleaning</div>
+                <div class="trans-square-desc">Power Query Suite</div>
+              </button>
+            </div>
+
+            <div class="trans-meta-box">
+              <span class="section-sub" id="cleaningMetaBadge">Quality report &amp; Power Query transformations</span>
+              <div class="export-group">
+                <button class="btn btn-secondary btn-sm" id="exportCsvBtn" type="button">Export CSV</button>
+                <button class="btn btn-secondary btn-sm" id="exportXlsxBtn" type="button">Export XLSX</button>
+                <button class="btn btn-secondary btn-sm" id="exportDbBtn" type="button">Export SQLite</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Subviews Container -->
+          <div class="trans-subviews-container">
+            <!-- SUBVIEW 1: DATASET SUMMARY -->
+            <div class="trans-subview active" id="subview-summary">
+              <div class="inspector-scroll" id="inspectorContent">
+                <div class="empty-state">
+                  <p>Attach a dataset in <strong>Upload Dataset</strong> to view the dataset summary, quality score, and cleaned table preview.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBVIEW 2: EDA SUMMARY -->
+            <div class="trans-subview" id="subview-eda">
+              <div class="summary-scroll" id="summaryContent">
+                <div class="summary-empty-state" id="summaryEmptyState">
+                  <div class="summary-empty-icon">📊</div>
+                  <div class="summary-empty-title">No dataset attached</div>
+                  <div class="summary-empty-sub">Upload or load a sample dataset to see automated EDA, statistical distributions, correlations, and column summaries here.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBVIEW 3: DATA CLEANING (Power Query Suite in Compact Square Cards) -->
+            <div class="trans-subview" id="subview-cleaning">
+              <div class="trans-cleaning-bar">
+                <div class="trans-cleaning-title-group">
+                  <span class="hint" id="customCleanDatasetHint">Attach a dataset first</span>
+                </div>
+                <div class="custom-clean-actions">
+                  <button type="button" class="btn btn-primary btn-sm" id="recleanBtn">Apply Cleaning Rules</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="resetCustomCleanBtn">Reset All</button>
+                </div>
+              </div>
+              <div id="customCleanLog"></div>
+
+              <div class="custom-clean-scroll" id="customCleanContent">
+                <div class="custom-clean-grid">
+                  <!-- Power Query 1: Core Cleaning -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Core Cleaning</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Cleaning Strategy</span>
+                        <select id="strategySelect" class="text-input">
+                          <option value="smart">Smart Clean (Auto)</option>
+                          <option value="keep_nulls">Keep Nulls</option>
+                          <option value="drop_rows">Drop Rows with Nulls</option>
+                          <option value="minimal">Minimal (Headers &amp; Trim)</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Text Case</span>
+                        <select id="textCaseSelect" class="text-input">
+                          <option value="none">Keep Original</option>
+                          <option value="title">Title Case</option>
+                          <option value="lower">lowercase</option>
+                          <option value="upper">UPPERCASE</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Missing Text Fill</span>
+                        <input type="text" id="fillTextInput" class="text-input" value="Unknown" placeholder="Unknown" />
+                      </label>
+                      <label class="field-label">
+                        <span>Round Decimals</span>
+                        <select id="roundDecimalsSelect" class="text-input">
+                          <option value="none">Keep Original</option>
+                          <option value="0">0 (Integer)</option>
+                          <option value="2">2 decimals</option>
+                          <option value="4">4 decimals</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="checks-row">
+                      <label class="check-item"><input type="checkbox" id="optDedup" checked /> Remove Duplicates</label>
+                      <label class="check-item"><input type="checkbox" id="optDates" checked /> Standardize Dates</label>
+                      <label class="check-item"><input type="checkbox" id="optNumeric" checked /> Parse Currency &amp; Numbers</label>
+                      <label class="check-item"><input type="checkbox" id="optCols" checked /> SQL Column Headers</label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 2: Find & Replace -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Find &amp; Replace Value</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Target Column</span>
+                        <select id="replaceColSelect" class="text-input">
+                          <option value="">All Text Columns</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Find Text</span>
+                        <input type="text" id="findTextInput" class="text-input" placeholder="e.g. N/A" />
+                      </label>
+                      <label class="field-label">
+                        <span>Replace With</span>
+                        <input type="text" id="replaceTextInput" class="text-input" placeholder="e.g. Unknown" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 3: Change Data Type -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Change Data Type</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Column</span>
+                        <select id="dtypeColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Cast To</span>
+                        <select id="dtypeTargetSelect" class="text-input">
+                          <option value="">No change</option>
+                          <option value="text">Text (string)</option>
+                          <option value="integer">Integer</option>
+                          <option value="float">Float / Decimal</option>
+                          <option value="date">Date (ISO-8601)</option>
+                          <option value="boolean">Boolean</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 4: Split Column -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Split Column</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Source Column</span>
+                        <select id="splitColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Delimiter</span>
+                        <input type="text" id="splitDelimInput" class="text-input" placeholder="e.g.  ,  |  -  ;" />
+                      </label>
+                      <label class="field-label">
+                        <span>Max Parts</span>
+                        <select id="splitMaxSelect" class="text-input">
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                          <option value="0">All</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 5: Extract from Column -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Extract from Column</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Source Column</span>
+                        <select id="extractColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Extract Mode</span>
+                        <select id="extractModeSelect" class="text-input">
+                          <option value="">No extraction</option>
+                          <option value="first_chars">First N Characters</option>
+                          <option value="last_chars">Last N Characters</option>
+                          <option value="between">Between Delimiters</option>
+                          <option value="digits">Digits Only</option>
+                          <option value="email">Email Address</option>
+                          <option value="url">URL</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Param (N or delimiter)</span>
+                        <input type="text" id="extractParamInput" class="text-input" placeholder="e.g. 5 or @" />
+                      </label>
+                      <label class="field-label">
+                        <span>Output Column Name</span>
+                        <input type="text" id="extractOutputCol" class="text-input" placeholder="extracted_col" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 6: Filter Rows -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Filter Rows</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Filter Column</span>
+                        <select id="filterColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Condition</span>
+                        <select id="filterCondSelect" class="text-input">
+                          <option value="">No filter</option>
+                          <option value="equals">Equals</option>
+                          <option value="contains">Contains</option>
+                          <option value="not_null">Not Null / Empty</option>
+                          <option value="greater_than">Greater Than (&gt;)</option>
+                          <option value="less_than">Less Than (&lt;)</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Filter Value</span>
+                        <input type="text" id="filterValInput" class="text-input" placeholder="e.g. Active or 100" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 7: Sort Rows -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Sort Rows</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Sort By Column</span>
+                        <select id="sortColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Sort Order</span>
+                        <select id="sortDirSelect" class="text-input">
+                          <option value="asc">Ascending (A-Z, 0-9)</option>
+                          <option value="desc">Descending (Z-A, 9-0)</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 8: Rename Column -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Rename Column</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Original Column</span>
+                        <select id="renameColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>New Column Name</span>
+                        <input type="text" id="renameToInput" class="text-input" placeholder="e.g. customer_region" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 9: Fill Values (Down / Up) -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Fill Values (Down / Up)</h2></div>
+                    <div class="custom-grid">
+                      <label class="field-label">
+                        <span>Target Column</span>
+                        <select id="fillDirColSelect" class="text-input">
+                          <option value="">Select column…</option>
+                        </select>
+                      </label>
+                      <label class="field-label">
+                        <span>Direction</span>
+                        <select id="fillDirSelect" class="text-input">
+                          <option value="">No fill</option>
+                          <option value="down">Fill Down (Forward Fill)</option>
+                          <option value="up">Fill Up (Backward Fill)</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Power Query 10: Drop Columns -->
+                  <div class="panel custom-clean-card">
+                    <div class="panel-header"><h2>Drop Columns</h2></div>
+                    <div class="field-label">
+                      <div class="drop-cols-list" id="dropColsList">
+                        <span class="hint">Columns appear here once a dataset is attached.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Groq & Google Gemini API Key Configuration Modal -->
+  <div class="modal-backdrop" id="aiModal" hidden>
+    <div class="modal-card modal-wide">
+      <div class="modal-head">
+        <h3>Groq &amp; Google Gemini API Keys</h3>
+        <button type="button" class="btn btn-ghost btn-sm" id="closeAiModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint" style="margin-top:0">
+          Add your <strong>Groq API Key</strong> (for independent Groq LLM reasoning) and/or
+          <strong>Google Gemini API Key</strong> (for Google Search grounding). Keys can be tested and persisted to <code>.env</code>.
+        </p>
+
+        <label class="field-label">
+          <span>Active AI Engine</span>
+          <select id="llmProviderSelect" class="text-input">
+            <option value="auto">Auto (Groq LLM / Google Gemini)</option>
+            <option value="groq">Groq LLM</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="local">Local Web / Offline</option>
+          </select>
+        </label>
+
+        <div class="provider-card">
+          <div class="provider-card-head">
+            <strong>Groq API</strong>
+            <span class="key-pill" id="groqKeyStatus">Not configured</span>
+          </div>
+          <label class="field-label">
+            <span>Groq API Key</span>
+            <input type="password" id="groqApiKeyInput" class="text-input" placeholder="gsk_... (leave blank to keep saved key)" />
+          </label>
+          <div class="provider-inline-row">
+            <label class="field-label" style="flex:1">
+              <span>Groq Model</span>
+              <select id="groqModelSelect" class="text-input">
+                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-secondary btn-sm" id="testGroqBtn">Test Groq</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="clearGroqBtn">Clear</button>
+          </div>
+          <div class="test-msg" id="groqTestMsg"></div>
+        </div>
+
+        <div class="provider-card">
+          <div class="provider-card-head">
+            <strong>Google Gemini API</strong>
+            <span class="key-pill" id="geminiKeyStatus">Not configured</span>
+          </div>
+          <label class="field-label">
+            <span>Google Gemini API Key</span>
+            <input type="password" id="geminiApiKeyInput" class="text-input" placeholder="AIza... (leave blank to keep saved key)" />
+          </label>
+          <div class="provider-inline-row">
+            <label class="field-label" style="flex:1">
+              <span>Gemini Model</span>
+              <select id="geminiModelSelect" class="text-input">
+                <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-secondary btn-sm" id="testGeminiBtn">Test Gemini</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="clearGeminiBtn">Clear</button>
+          </div>
+          <div class="test-msg" id="geminiTestMsg"></div>
+        </div>
+
+        <label class="check-item" style="margin-top:4px">
+          <input type="checkbox" id="persistEnvCheck" checked />
+          Save keys to local <code>.env</code> file
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="clearAiKeyBtn">Use Local Engine</button>
+          <button type="button" class="btn btn-primary" id="saveAiKeyBtn">Save Keys &amp; Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
